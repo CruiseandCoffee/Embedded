@@ -1,0 +1,64 @@
+#include <FS.h>
+#include <SPIFFS.h>
+#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
+#include <Adafruit_GFX.h>
+#include <FastLED.h> // Needed for color conversion
+
+#define PANEL_RES_X 64
+#define PANEL_RES_Y 32
+#define PANEL_CHAIN 1
+
+MatrixPanel_I2S_DMA* dma_display = nullptr;
+
+#define FRAME_COUNT 40 // Adjust based on your GIF
+#define FRAME_DELAY 100 // ms per frame
+
+void setupMatrix() {
+  HUB75_I2S_CFG::i2s_pins _pins = {19, 18, 13, 5, 8, 12, 44, 14, 4, 10, 6, 9, 15, 2};
+  HUB75_I2S_CFG mxconfig(PANEL_RES_X, PANEL_RES_Y, PANEL_CHAIN, _pins);
+  mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_10M;
+
+  dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+  dma_display->begin();
+  dma_display->setBrightness8(80);
+  dma_display->clearScreen();
+}
+
+void displayFrame(const char* filename) {
+  File f = SPIFFS.open(filename, "r");
+  if (!f) {
+    //Serial.println("Failed to open frame file");
+    return;
+  }
+
+  for (int y = 0; y < PANEL_RES_Y; y++) {
+    for (int x = 0; x < PANEL_RES_X; x++) {
+      uint8_t r = f.read();
+      uint8_t g = f.read();
+      uint8_t b = f.read();
+      dma_display->drawPixel(x, y, dma_display->color565(r, g, b));
+    }
+  }
+
+  f.close();
+}
+
+void setup() {
+  Serial.begin(115200);
+  setupMatrix();
+
+  if (!SPIFFS.begin(true)) {
+    //Serial.println("SPIFFS Mount Failed");
+    return;
+  }
+
+  //Serial.println("SPIFFS mounted.");
+}
+
+void loop() {
+  for (int i = 0; i < FRAME_COUNT; i++) {
+    String path = "/frame" + String(i) + ".raw"; // Example: /frame0.raw
+    displayFrame(path.c_str());
+    delay(FRAME_DELAY);
+  }
+}

@@ -1,0 +1,135 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
+
+// YouTube Config
+const char* apiKey = "abcdefg";
+const char* channelId = "abcdefg";
+
+// WiFi Config
+const char* ssid = "abcdefg";
+const char* password = "";
+
+// Matrix Display Pins
+#define R1_PIN 19
+#define G1_PIN 18
+#define B1_PIN 13
+#define R2_PIN 5 
+#define G2_PIN 8 
+#define B2_PIN 12
+#define A_PIN 44
+#define B_PIN 14
+#define C_PIN 4
+#define D_PIN 10
+#define E_PIN 6
+#define LAT_PIN 9
+#define OE_PIN 15
+#define CLK_PIN 2
+
+#define PANEL_RES_X 64
+#define PANEL_RES_Y 32
+#define PANEL_CHAIN 1
+
+MatrixPanel_I2S_DMA *dma_display = nullptr;
+
+String getSubscriberCount() {
+  HTTPClient http;
+  String requestURL = "https://www.googleapis.com/youtube/v3/channels?part=statistics&id=" + String(channelId) + "&key=" + String(apiKey);
+
+  http.begin(requestURL);
+  int httpCode = http.GET();
+  String payload;
+
+  if (httpCode == 200) {
+    payload = http.getString();
+    DynamicJsonDocument doc(1024);
+    deserializeJson(doc, payload);
+    String subs = doc["items"][0]["statistics"]["subscriberCount"].as<String>();
+    http.end();
+    return subs;
+  } else {
+    http.end();
+    return "Err";
+  }
+}
+
+void drawYouTubeLogo() {
+  dma_display->fillScreen(dma_display->color565(0, 0, 0));
+
+  // Padding from the left
+  int xOffset = 2;
+
+  // Draw a rounded red rectangle for the YouTube logo background
+  int logoX = xOffset;
+  int logoY = 8;
+  int logoW = 32;
+  int logoH = 16;
+  int radius = 4;
+
+  uint16_t red = dma_display->color565(255, 0, 0);
+  uint16_t white = dma_display->color565(255, 255, 255);
+
+  // Draw red rounded rectangle manually
+  dma_display->fillRect(logoX + radius, logoY, logoW - 2 * radius, logoH, red);
+  dma_display->fillRect(logoX, logoY + radius, logoW, logoH - 2 * radius, red);
+
+  // Fill the corners (quarter circles)
+  dma_display->fillCircle(logoX + radius, logoY + radius, radius, red);                         // Top-left
+  dma_display->fillCircle(logoX + logoW - radius - 1, logoY + radius, radius, red);             // Top-right
+  dma_display->fillCircle(logoX + radius, logoY + logoH - radius - 1, radius, red);             // Bottom-left
+  dma_display->fillCircle(logoX + logoW - radius - 1, logoY + logoH - radius - 1, radius, red); // Bottom-right
+
+  // Draw smaller white play triangle in the center
+  int centerX = logoX + logoW / 2;
+  int centerY = logoY + logoH / 2;
+
+  int triHalfHeight = 4;  // was 6
+  int triHalfWidth = 4;   // was 5
+
+  dma_display->fillTriangle(
+    centerX - triHalfWidth / 2, centerY - triHalfHeight,
+    centerX - triHalfWidth / 2, centerY + triHalfHeight,
+    centerX + triHalfWidth, centerY,
+    white
+  );
+}
+
+
+
+void setup() {
+  Serial.begin(115200);
+
+  // WiFi connect
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    //Serial.print(".");
+  }
+  //Serial.println("\nWiFi connected.");
+
+  // Matrix init
+  HUB75_I2S_CFG::i2s_pins _pins = {R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN};
+  HUB75_I2S_CFG mxconfig(PANEL_RES_X, PANEL_RES_Y, PANEL_CHAIN, _pins);
+  mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_20M;
+
+  dma_display = new MatrixPanel_I2S_DMA(mxconfig);
+  dma_display->begin();
+  dma_display->setBrightness8(180);
+  dma_display->clearScreen();
+}
+
+void loop() {
+  String subs = getSubscriberCount();
+  //Serial.println("Subs: " + subs);
+
+  drawYouTubeLogo();
+
+  dma_display->setTextSize(1);
+  dma_display->setTextWrap(false);
+  dma_display->setTextColor(dma_display->color565(255, 255, 255));
+  dma_display->setCursor(36, 12);
+  dma_display->print(subs);
+
+  delay(5 * 60 * 1000);  // Update every 5 minutes
+}
