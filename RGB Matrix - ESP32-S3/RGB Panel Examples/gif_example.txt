@@ -1,16 +1,16 @@
-#include <FS.h>
-#include <SPIFFS.h>
-#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #include <Adafruit_GFX.h>
+#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
+#include <FS.h>
 #include <FastLED.h> // Needed for color conversion
+#include <SPIFFS.h>
 
 #define PANEL_RES_X 64
 #define PANEL_RES_Y 32
 #define PANEL_CHAIN 1
 
-MatrixPanel_I2S_DMA* dma_display = nullptr;
+MatrixPanel_I2S_DMA *dma_display = nullptr;
 
-#define FRAME_COUNT 40 // Adjust based on your GIF
+#define FRAME_COUNT 40  // Adjust based on your GIF
 #define FRAME_DELAY 100 // ms per frame
 
 void setupMatrix() {
@@ -24,10 +24,10 @@ void setupMatrix() {
   dma_display->clearScreen();
 }
 
-void displayFrame(const char* filename) {
+void displayFrame(const char *filename) {
   File f = SPIFFS.open(filename, "r");
   if (!f) {
-    //Serial.println("Failed to open frame file");
+    // Serial.println("Failed to open frame file");
     return;
   }
 
@@ -48,11 +48,11 @@ void setup() {
   setupMatrix();
 
   if (!SPIFFS.begin(true)) {
-    //Serial.println("SPIFFS Mount Failed");
+    // Serial.println("SPIFFS Mount Failed");
     return;
   }
 
-  //Serial.println("SPIFFS mounted.");
+  // Serial.println("SPIFFS mounted.");
 }
 
 void loop() {
