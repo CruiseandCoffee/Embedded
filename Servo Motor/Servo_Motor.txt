@@ -1,0 +1,14 @@
+// To Write angle and upload code  #include <Arduino.h>
+#include <ESP32Servo.h>
+
+int servopin = 7;
+Servo coffeeservo;
+
+void setup() {
+  coffeeservo.attach(servopin);
+  coffeeservo.write(100);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+}

@@ -1,0 +1,30 @@
+// To Get Serial Input to move to any angle  #include <Arduino.h>
+#include <ESP32Servo.h>
+
+int servopin = 7;
+Servo coffeeservo;
+
+void setup() {
+  coffeeservo.attach(servopin);
+  coffeeservo.write(100);
+}
+
+#include <Arduino.h>
+#include <ESP32Servo.h>
+
+int servopin = 7;
+Servo coffeeservo;
+
+void setup() {
+  coffeeservo.attach(servopin);
+  coffeeservo.write(100);
+  Serial.begin(115200);
+}
+
+void loop() {
+  if (Serial.available()) {
+    int coffee_angle = Serial.parseInt();
+    coffeeservo.write(coffee_angle);
+  }
+  delay(20);
+}
