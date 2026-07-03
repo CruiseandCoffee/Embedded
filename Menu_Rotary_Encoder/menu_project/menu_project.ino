@@ -257,7 +257,7 @@ void loop() {
       if (tickCount >= AUTO_ADVANCE_TICKS) {
         // Only NOW change the page — not on every tick
         tickCount = 0;
-        currentPage = (MainPage)((currentPage + 1) % PAGE_COUNT);
+        currentPage = (MainPage)((currentPage + delta + PAGE_COUNT) % PAGE_COUNT);
         Serial.print("[AUTO]   10 ticks → advancing to ");
         Serial.println(pageNames[currentPage]);
         logState("AUTO-ADVANCE PAGE");
